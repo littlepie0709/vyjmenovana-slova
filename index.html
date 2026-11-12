@@ -68,6 +68,25 @@ nav a.mob{display:none}
 .pc.got{box-shadow:0 4px 0 var(--ok)}
 .stars{font-size:2.6rem;letter-spacing:.1em}
 #pres:empty{display:none}
+.iy.four{gap:10px}
+.iy.four button{width:76px;height:86px}
+.iy.four button[data-a="í"]{background:#E3F2FF;color:#1C5FA8;box-shadow:0 5px 0 #A9D2F7}
+.iy.four button[data-a="ý"]{background:#FFF6C7;color:#7A5A00;box-shadow:0 5px 0 #F2D65A}
+.ttext{position:relative}
+.wd{white-space:nowrap}
+.szh{display:none}
+.ttext.showzh .sn{display:block;margin-bottom:10px}
+.ttext.showzh .szh{display:block;font-size:.88rem;line-height:1.5;color:var(--muted);font-weight:600;padding-left:2px}
+.gp.cur{outline:3px solid var(--c);outline-offset:1px}
+.chooser{position:absolute;z-index:6;display:flex;gap:6px;padding:6px;background:var(--sheet);border:2px solid var(--line);border-radius:14px;box-shadow:0 12px 26px -12px rgba(27,45,85,.5);line-height:1}
+.chooser button{min-width:46px;height:46px;border-radius:11px;border:0;font-family:var(--f-display);font-size:1.5rem;font-weight:600;cursor:pointer}
+.chooser button[data-v="i"],.chooser button[data-v="í"]{background:#E3F2FF;color:#1C5FA8}
+.chooser button[data-v="y"],.chooser button[data-v="ý"]{background:#FFF6C7;color:#7A5A00}
+.chooser .clr{background:var(--primary-t);color:var(--muted);font-size:1.1rem;min-width:40px}
+.zhbox{margin-top:10px;padding:10px 14px;border-radius:12px;background:var(--primary-t);color:var(--ink);font-weight:700;font-size:.95rem;text-align:left;display:flex;flex-direction:column;gap:4px}
+.zhw{font-weight:600;color:var(--muted);font-size:.88rem}
+.hw{border-bottom-style:dotted}
+@media (max-width:680px){.iy.four button{width:64px;height:74px;font-size:2.1rem}.iy.four{gap:8px}}
 .badge{font-size:.72rem;background:var(--bad);color:#fff;border-radius:999px;padding:0 6px;line-height:1.5}
 main{padding-block:24px 64px}
 h1,h2,h3{font-family:var(--f-display);color:var(--ink);text-wrap:balance;margin:0;line-height:1.2}
@@ -615,18 +634,22 @@ function viewSetup(mode){
     <div class="ltabs" id="fs"><button class="ltab all" data-l="*">Vše · 全部</button>${LETTERS.map(L=>`<button class="ltab ${cls(L)}" data-l="${L}">${L}</button>`).join('')}</div>
     <div class="lbl">Počet otázek · 题数</div>
     <div class="ltabs" id="fn">${[10,20,30].map(n=>`<button class="ltab all${n===roundLen?' on':''}" data-n="${n}">${n}</button>`).join('')}</div>
-    <p class="note" style="margin:0">${mode==='fill'?'Mix: vyjmenovaná a příbuzná slova, jména + asi 30 % slov s měkkým i. Klávesy I / Y, Enter = další.':'Mix: chytáky ve větách, význam slova, najdi vyjmenované slovo, správný pravopis. Klávesy 1–4, Enter = další.'}</p>
+    ${mode==='fill'?`<div class="lbl">Obtížnost · 难度</div><div class="row"><div class="seg" id="lv"><button data-l="easy">Lehká · i / y</button><button data-l="hard">Těžká · i í y ý</button></div></div>`:''}
+    <p class="note" style="margin:0">${mode==='fill'?'Mix: vyjmenovaná a příbuzná slova, jména + asi 30 % slov s měkkým i. Lehká: vybíráš jen i / y (klávesy I, Y). Těžká: musíš poznat i délku – i, í, y, ý (klávesy 1–4). 简单：只选 i / y；困难：还要分长短音 i í y ý。':'Mix: chytáky ve větách, význam slova, najdi vyjmenované slovo, správný pravopis. Klávesy 1–4, Enter = další.'}</p>
     <div class="row"><button class="btn" id="go">Start · 开始</button></div></div></div>`;
   const paint=()=>$$('#fs .ltab').forEach(b=>b.classList.toggle('on',b.dataset.l==='*'?sel.size===LETTERS.length:sel.has(b.dataset.l)&&sel.size<LETTERS.length));
   $$('#fs .ltab').forEach(b=>b.onclick=()=>{const l=b.dataset.l;
     if(l==='*')sel=new Set(LETTERS);else if(sel.size===LETTERS.length)sel=new Set([l]);else{sel.has(l)?sel.delete(l):sel.add(l);if(!sel.size)sel=new Set(LETTERS)}paint()});
   $$('#fn .ltab').forEach(b=>b.onclick=()=>{roundLen=+b.dataset.n;$$('#fn .ltab').forEach(x=>x.classList.toggle('on',x===b))});
   paint();
+  const pl=()=>$$('#lv button').forEach(b=>b.classList.toggle('on',b.dataset.l===fillLvl));
+  $$('#lv button').forEach(b=>b.onclick=()=>{fillLvl=b.dataset.l;S.lvl=fillLvl;save();pl()});pl();
   $('#go').onclick=()=>start(mode);
 }
-function start(mode){mode==='fill'?run(fillQs(roundLen),'Doplň i/y',false):run(choiceQs(roundLen),'Výběr',false)}
+let fillLvl=S.lvl||'easy';
+function start(mode){mode==='fill'?run(fillQs(roundLen),'Doplň i/y'+(fillLvl==='hard'?' · těžká':''),false):run(choiceQs(roundLen),'Výběr',false)}
 function run(qs,name,isMist){
-  runner={qs,i:0,ok:0,wrong:[],name,isMist,done:false,answered:false};
+  runner={qs,i:0,ok:0,wrong:[],name,isMist,done:false,answered:false,lvl:fillLvl};
   $('#app').innerHTML=`<div class="stack"><div class="qhead"><h2>${esc(name)}</h2>
     <div class="prog"><i id="pg"></i></div><span class="score" id="sc"></span><button class="btn ghost sm" id="quit">Ukončit</button></div>
     <div class="sheet qbox" id="qb"></div></div>`;
@@ -638,10 +661,12 @@ function drawQ(){const r=runner,q=r.qs[r.i];r.answered=false;
   const qb=$('#qb');qb.className='sheet qbox '+cls(q.L);
   let h=`<span class="qtag">${q.L}</span>`;
   if(q.kind==='fill'){
-    h+=`<div class="qprompt">Doplň i nebo y · 填 i 或 y</div>
+    const hard=r.lvl==='hard';
+    h+=`<div class="qprompt">${hard?'Doplň i, í, y nebo ý · 填 i / í / y / ý':'Doplň i nebo y · 填 i 或 y'}</div>
       ${q.zh?`<div class="qmean">${q.how==='main'?`<span class="e">${art(keyOf(q.t),q.e)}</span>`:q.how==='iword'&&IMG[IKEY(q.t)]?`<span class="e">${art(IKEY(q.t),'')}</span>`:q.e?`<span class="e">${q.e}</span>`:''}<span>${esc(q.zh)}</span></div>`:''}
       <div class="qword">${esc(q.t.slice(0,q.k))}<span class="gap" id="gp">${esc(q.t[q.k])}</span>${esc(q.t.slice(q.k+1))}</div>
-      <div class="iy"><button data-a="i">i<small>í · I</small></button><button data-a="y">y<small>ý · Y</small></button></div>`;
+      ${hard?`<div class="iy four">${['i','í','y','ý'].map((c,n)=>`<button data-a="${c}">${c}<small>${n+1}</small></button>`).join('')}</div>`
+        :`<div class="iy"><button data-a="i">i<small>í · I</small></button><button data-a="y">y<small>ý · Y</small></button></div>`}`;
   }else{
     r.order=shuffle(q.opts.map((o,i)=>i));
     h+=`<div class="qprompt">${esc(q.prompt)}</div>
@@ -657,8 +682,8 @@ function drawQ(){const r=runner,q=r.qs[r.i];r.answered=false;
   $('#nx').onclick=next;
 }
 function answer(v){const r=runner;if(!r||r.answered)return;r.answered=true;const q=r.qs[r.i];let ok,why;const hb=$('#hb');if(hb)hb.hidden=true;
-  if(q.kind==='fill'){ok=v===q.ans;$('#gp').classList.add(ok?'ok':'bad');
-    $$('#qb [data-a]').forEach(b=>{b.disabled=true;if(b.dataset.a===q.ans)b.classList.add('ok');else if(b.dataset.a===v)b.classList.add('bad')});
+  if(q.kind==='fill'){const target=r.lvl==='hard'?q.t[q.k].toLowerCase():q.ans;ok=v===target;$('#gp').classList.add(ok?'ok':'bad');
+    $$('#qb [data-a]').forEach(b=>{b.disabled=true;if(b.dataset.a===target)b.classList.add('ok');else if(b.dataset.a===v)b.classList.add('bad')});
     why=whyFill(q);
   }else{ok=v===q.a;$$('#qb [data-o]').forEach(b=>{b.disabled=true;const o=+b.dataset.o;if(o===q.a)b.classList.add('ok');else if(o===v)b.classList.add('bad')});
     why=q.why;const bl=$('#bl');if(bl)bl.outerHTML=`<b style="color:var(--ok)">${hlAny(q.opts[q.a])}</b>`}
@@ -684,7 +709,7 @@ function finish(){const r=runner;if(!r||r.done)return;r.done=true;const n=Math.m
   $('#pg').style.width='100%';
   bindShare(nm=>resultText(nm,r.name,r.isMist?'opravna chyb':groupsOf(r.qs),[`Výsledek: ${r.ok}/${n} (${Math.round(p*100)} %) – známka ${g}`].concat(r.hints?[`Nápověda použita: ${r.hints}×`]:[]),r.wrong.map(label)));
   const name=r.name,isM=r.isMist;
-  $('#again').onclick=()=>isM?startMist():start(name==='Doplň i/y'?'fill':'choice');
+  $('#again').onclick=()=>isM?startMist():start(name.startsWith('Doplň')?'fill':'choice');
   runner=null;
 }
 
@@ -706,53 +731,64 @@ function recordQ(q,ok){stat(q.L,ok);const m=S.mist[q.id];
   if(ok){if(m){m.st=(m.st||0)+1;if(m.st>=2)delete S.mist[q.id]}}else S.mist[q.id]={q,n:(m?m.n:0)+1,st:0};save()}
 
 /* ================= doplňovačka (text) ================= */
-const TEXTS=[{"id":"b1","L":"B","title":"Na vesnici","t":"Naše rodina b{y}dlí na vesnici. V domě máme hodně starého náb{y}tku. Za domem je louka, kde se pase dob{y}tek. Dědeček chová kob{y}lu a jednoho b{ý}ka. Babička sbírá léčivé b{y}linky a suší je na půdě. O Velikonocích dodržujeme starý ob{y}čej a malujeme vajíčka. Náš pes je b{y}strý a hlídá celý dvůr. U plotu kvete b{í}lá růže."},
-{"id":"l1","L":"L","title":"Na horách","t":"V zimě jezdíme na hory, kde lyžujeme na l{y}žích. Když jsem poprvé sjížděl kopec, sl{y}šel jsem, jak se všichni smějí. Upadl jsem a bolelo mě l{ý}tko. Na slunci se všechno bl{ý}skalo. U potoka stojí starý ml{ý}n a voda kolem něj klidně pl{y}ne. Na sněhu ležel suchý l{i}st. Maminka říká, že nesmíme pl{ý}tvat jídlem."},
-{"id":"m1","L":"M","title":"O přestávce","t":"M{y} jsme o přestávce pozorovali na zahradě hlem{ý}ždě a různý hm{y}z. Pak jsme si šli um{ý}t ruce m{ý}dlem. Paní učitelka zam{y}kala třídu, když jsme uviděli malou m{y}š. Doma jsem dlouho přem{ý}šlel, kam asi utekla. Všechno jsem vyprávěl m{i}lé babičce."},
-{"id":"p1","L":"P","title":"U rybníka","t":"Večer nad rybníkem létali netop{ý}ři. Na louce kvetly kopretiny a včely sbíraly p{y}l. Kůň u plotu měl tvrdá kop{y}ta a měkké p{y}sky. Za stodolou stál velký p{y}tel obilí. Hladina rybníka se v zapadajícím slunci třp{y}tila. Páv byl p{y}šný na svůj ocas. V trávě jsme našli slep{ý}še. Tatínek si mezitím p{i}l čaj z termosky."},
-{"id":"s1","L":"S","title":"Snídaně","t":"Můj s{y}n má rád s{ý}r. K snídani si dal chleba se s{ý}rem a byl s{y}tý až do oběda. Venku bylo s{y}chravo, a tak jsme zůstali doma. Na krmítko jsme nas{y}pali zrní a hned přiletěla s{ý}korka. Babička si do čaje dala s{i}rup. Kočka zas{y}čela na psa."},
-{"id":"v1","L":"V","title":"Výlet k řece","t":"O prázdninách jsme jeli na v{ý}let k řece. Ve vodě plavala v{y}dra. Večer v lese zahoukal v{ý}r a v dálce v{y}l vlk. Děti radostí v{ý}skaly. Na kopci jsme v{y}lezli na v{y}sokou rozhlednu. Foukal silný v{í}tr. Po večeři jsme si dali hroznové v{í}no."},
-{"id":"z1","L":"Z","title":"Na letišti","t":"Ráno jsem vstal brz{y}, protože jsme letěli z letiště v Ruz{y}ni. V letadle jsem celou cestu z{í}val. Sestra se učí cizí jaz{y}k. Víš, jak se naz{ý}vá hlavní město Francie? Z reproduktoru se oz{ý}vá hlášení."},
-{"id":"x1","L":"X","title":"O mlynáři","t":"B{y}l jednou jeden ml{y}nář, který b{y}dlel u řeky. Měl s{y}na a b{í}lou kob{y}lu. Jednou v noci usl{y}šel podivné zvuky. V{y}šel ven a uviděl netop{ý}ra. V dálce v{y}l vlk a nad lesem se bl{ý}skalo. Ml{y}nář se nebál, protože b{y}l b{y}strý a odvážný."},
-{"id":"x2","L":"X","title":"Jedeme na hory","t":"Z{í}tra pojedeme na hory. Tatínek už nab{i}l telefon a maminka nas{y}pala do krabičky sušenky. Pojedeme po s{i}lnici kolem v{y}sokých l{i}p. Ubytujeme se u dědečka, který b{y}dlí blízko lesa. Vezmeme si l{y}že a vyrazíme na výlet. Cestou možná uvidíme l{i}šku. Večer budeme p{í}t horký čaj a dívat se, jak se sníh třp{y}tí."},
-{"id":"x3","L":"X","title":"Chytáky","t":"Musím si um{ý}t ruce, protože chci m{í}t čisté prsty. Na zahradě roste b{ý}lí a pták sedí na b{i}dle. Do třídy nám přib{y}l nový spolužák a tatínek přib{i}l obrázek na zeď. Vlk začal v{ý}t a babička v{i}la věnec. Na pizzu dáme s{ý}r a do čaje s{i}rup."}];
+const TEXTS=[{"id": "b1", "L": "B", "title": "Na vesnici", "t": "Naše rodina b{y}dlí na vesnici. V domě máme hodně starého náb{y}tku. Za domem je louka, kde se pase dob{y}tek. Dědeček chová kob{y}lu a jednoho b{ý}ka. Babička sbírá léčivé b{y}linky a suší je na půdě. O Velikonocích dodržujeme starý ob{y}čej a malujeme vajíčka. Náš pes je b{y}strý a hlídá celý dvůr. U plotu kvete b{í}lá růže.", "zh": ["我们一家住在乡下。", "家里有很多旧家具。", "房子后面有一片草地，牲畜在那里吃草。", "爷爷养了一匹母马和一头公牛。", "奶奶采集药草，把它们晒在阁楼上。", "复活节时我们遵守古老的习俗，给鸡蛋画彩绘。", "我们的狗很机灵，看守着整个院子。", "篱笆旁开着一朵白玫瑰。"]}, {"id": "l1", "L": "L", "title": "Na horách", "t": "V zimě jezdíme na hory, kde lyžujeme na l{y}žích. Když jsem poprvé sjížděl kopec, sl{y}šel jsem, jak se všichni smějí. Upadl jsem a bolelo mě l{ý}tko. Na slunci se všechno bl{ý}skalo. U potoka stojí starý ml{ý}n a voda kolem něj klidně pl{y}ne. Na sněhu ležel suchý l{i}st. Maminka říká, že nesmíme pl{ý}tvat jídlem.", "zh": ["冬天我们去山里，在那儿滑雪。", "我第一次滑下山坡时，听见大家都在笑。", "我摔倒了，小腿肚很疼。", "阳光下一切都闪闪发光。", "小溪边有一座老磨坊，溪水在它周围静静地流淌。", "雪地上躺着一片干树叶。", "妈妈说，我们不能浪费食物。"]}, {"id": "m1", "L": "M", "title": "O přestávce", "t": "M{y} jsme o přestávce pozorovali na zahradě hlem{ý}ždě a různý hm{y}z. Pak jsme si šli um{ý}t ruce m{ý}dlem. Paní učitelka zam{y}kala třídu, když jsme uviděli malou m{y}š. Doma jsem dlouho přem{ý}šlel, kam asi utekla. Všechno jsem vyprávěl m{i}lé babičce.", "zh": ["课间休息时，我们在花园里观察蜗牛和各种昆虫。", "然后我们去用肥皂洗手。", "老师正在锁教室门的时候，我们看见了一只小老鼠。", "回到家我想了很久，它到底跑到哪里去了。", "我把这一切都讲给了亲爱的奶奶听。"]}, {"id": "p1", "L": "P", "title": "U rybníka", "t": "Večer nad rybníkem létali netop{ý}ři. Na louce kvetly kopretiny a včely sbíraly p{y}l. Kůň u plotu měl tvrdá kop{y}ta a měkké p{y}sky. Za stodolou stál velký p{y}tel obilí. Hladina rybníka se v zapadajícím slunci třp{y}tila. Páv byl p{y}šný na svůj ocas. V trávě jsme našli slep{ý}še. Tatínek si mezitím p{i}l čaj z termosky.", "zh": ["傍晚，蝙蝠在池塘上空飞来飞去。", "草地上开着雏菊，蜜蜂在采花粉。", "篱笆旁的马有坚硬的蹄子和柔软的嘴唇。", "谷仓后面放着一大袋粮食。", "池塘的水面在夕阳下闪闪发光。", "孔雀为自己的尾巴感到骄傲。", "我们在草丛里发现了一条蛇蜥。", "这时爸爸用保温壶喝了茶。"]}, {"id": "s1", "L": "S", "title": "Snídaně", "t": "Můj s{y}n má rád s{ý}r. K snídani si dal chleba se s{ý}rem a byl s{y}tý až do oběda. Venku bylo s{y}chravo, a tak jsme zůstali doma. Na krmítko jsme nas{y}pali zrní a hned přiletěla s{ý}korka. Babička si do čaje dala s{i}rup. Kočka zas{y}čela na psa.", "zh": ["我儿子喜欢吃奶酪。", "他早餐吃了面包配奶酪，一直饱到午饭。", "外面阴冷潮湿，所以我们待在家里。", "我们往喂鸟器里撒了谷粒，山雀马上就飞来了。", "奶奶往茶里加了糖浆。", "猫对着狗发出嘶嘶声。"]}, {"id": "v1", "L": "V", "title": "Výlet k řece", "t": "O prázdninách jsme jeli na v{ý}let k řece. Ve vodě plavala v{y}dra. Večer v lese zahoukal v{ý}r a v dálce v{y}l vlk. Děti radostí v{ý}skaly. Na kopci jsme v{y}lezli na v{y}sokou rozhlednu. Foukal silný v{í}tr. Po večeři jsme si dali hroznové v{í}no.", "zh": ["暑假里我们去河边郊游。", "水里游着一只水獭。", "傍晚，雕鸮在森林里鸣叫，远处有狼在嚎叫。", "孩子们高兴得欢呼起来。", "我们在山顶上登上了一座高高的瞭望塔。", "刮着大风。", "晚饭后我们吃了葡萄。"]}, {"id": "z1", "L": "Z", "title": "Na letišti", "t": "Ráno jsem vstal brz{y}, protože jsme letěli z letiště v Ruz{y}ni. V letadle jsem celou cestu z{í}val. Sestra se učí cizí jaz{y}k. Víš, jak se naz{ý}vá hlavní město Francie? Z reproduktoru se oz{ý}vá hlášení.", "zh": ["早上我起得很早，因为我们要从鲁济涅机场坐飞机。", "在飞机上我一路都在打哈欠。", "姐姐在学一门外语。", "你知道法国的首都叫什么吗？", "广播里传来通知。"]}, {"id": "x1", "L": "X", "title": "O mlynáři", "t": "B{y}l jednou jeden ml{y}nář, který b{y}dlel u řeky. Měl s{y}na a b{í}lou kob{y}lu. Jednou v noci usl{y}šel podivné zvuky. V{y}šel ven a uviděl netop{ý}ra. V dálce v{y}l vlk a nad lesem se bl{ý}skalo. Ml{y}nář se nebál, protože b{y}l b{y}strý a odvážný.", "zh": ["从前有一个磨坊主，他住在河边。", "他有一个儿子和一匹白色的母马。", "一天夜里，他听到了奇怪的声音。", "他走出门，看见了一只蝙蝠。", "远处有狼在嚎叫，森林上空电光闪闪。", "磨坊主一点也不害怕，因为他机智又勇敢。"]}, {"id": "x2", "L": "X", "title": "Jedeme na hory", "t": "Z{í}tra pojedeme na hory. Tatínek už nab{i}l telefon a maminka nas{y}pala do krabičky sušenky. Pojedeme po s{i}lnici kolem v{y}sokých l{i}p. Ubytujeme se u dědečka, který b{y}dlí blízko lesa. Vezmeme si l{y}že a vyrazíme na výlet. Cestou možná uvidíme l{i}šku. Večer budeme p{í}t horký čaj a dívat se, jak se sníh třp{y}tí.", "zh": ["明天我们要去山里。", "爸爸已经给手机充好了电，妈妈把饼干装进了小盒子。", "我们会沿着公路经过高高的椴树。", "我们住在爷爷家，他家离森林很近。", "我们带上滑雪板出发去郊游。", "路上我们也许会看见狐狸。", "晚上我们会喝热茶，看雪闪闪发光。"]}, {"id": "x3", "L": "X", "title": "Chytáky", "t": "Musím si um{ý}t ruce, protože chci m{í}t čisté prsty. Na zahradě roste b{ý}lí a pták sedí na b{i}dle. Do třídy nám přib{y}l nový spolužák a tatínek přib{i}l obrázek na zeď. Vlk začal v{ý}t a babička v{i}la věnec. Na pizzu dáme s{ý}r a do čaje s{i}rup.", "zh": ["我得洗手，因为我想要干净的手指。", "花园里长着杂草，鸟停在杆子上。", "我们班来了一个新同学，爸爸把画钉在了墙上。", "狼开始嚎叫，奶奶在编花环。", "我们在披萨上放奶酪，在茶里加糖浆。"]}];
 const tagOf=L=>L==='X'?'Mix':L;
 let tx=null;
 function viewTexts(){const best=S.tbest||{};
   $('#app').innerHTML=`<div class="stack"><h2>Doplňovačka <span class="zh">短文填空</span></h2>
-    <p class="note" style="margin:0">Klikni na mezeru: … → i → y → … Až doplníš vše, stiskni Zkontrolovat. 点空格切换 i / y，全部填完点「检查」。</p>
+    <div class="row"><span class="lbl">Obtížnost · 难度</span><div class="seg" id="tlv"><button data-l="easy">Lehká · i / y</button><button data-l="hard">Těžká · i í y ý</button></div></div>
+    <p class="note" style="margin:0">Klikni na mezeru a vyber písmeno. Až doplníš vše, stiskni Zkontrolovat – pak uvidíš i překlad každé věty. 点空格选字母，全部填完点「检查」，之后每句下面会显示中文意思。</p>
     <div class="tcards">${TEXTS.map((T,i)=>{const n=(T.t.match(/\{[iíyý]\}/g)||[]).length,b=best[T.id];
       return`<button class="sheet tcard ${cls(T.L)}" data-i="${i}"><span class="qtag">${tagOf(T.L)}</span><h3>${esc(T.title)}</h3><span class="note">${n} mezer${b!=null?` · nejlépe ${b}/${n} ⭐`:''}</span></button>`}).join('')}</div></div>`;
+  const pl=()=>$$('#tlv button').forEach(b=>b.classList.toggle('on',b.dataset.l===tLvl));
+  $$('#tlv button').forEach(b=>b.onclick=()=>{tLvl=b.dataset.l;S.tlvl=tLvl;save();pl()});pl();
   $$('.tcard').forEach(b=>b.onclick=()=>openText(+b.dataset.i))}
+let tLvl=S.tlvl||'easy';
 function parseT(T){const tk=[];let full='';T.t.split(/(\{[iíyý]\})/).forEach(p=>{const m=p.match(/^\{([iíyý])\}$/);if(m){tk.push({g:true,ans:m[1],pos:full.length});full+=m[1]}else if(p){tk.push({g:false,s:p});full+=p}});
   const isL=c=>!!c&&/\p{L}/u.test(c);
   tk.filter(t=>t.g).forEach(g=>{let a=g.pos,b=g.pos+1;while(isL(full[a-1]))a--;while(isL(full[b]))b++;g.word=full.slice(a,b);g.k=g.pos-a;g.L=full[g.pos-1].toUpperCase();g.base='ií'.includes(g.ans)?'i':'y'});
   return{tk,full,gaps:tk.filter(t=>t.g)}}
-function openText(i){const T=TEXTS[i],P=parseT(T);tx={T,i,...P,vals:[],checked:false};let gi=0;
-  const body=P.tk.map(t=>t.g?`<button class="gp" data-g="${gi++}" aria-label="Doplň i nebo y">…</button>`:esc(t.s)).join('');
-  $('#app').innerHTML=`<div class="stack"><div class="qhead"><h2><span class="qtag ${cls(T.L)}">${tagOf(T.L)}</span> ${esc(T.title)}</h2><span class="score" id="tf">0 / ${P.gaps.length}</span><button class="btn ghost sm" id="back">← Texty</button></div>
-    <div class="sheet ttext ${cls(T.L)}" id="tt">${body}</div>
+function openText(i){const T=TEXTS[i],P=parseT(T),hard=tLvl==='hard';tx={T,i,...P,vals:[],checked:false,lvl:tLvl};
+  const ends=[...P.full.matchAll(/[^.!?]+[.!?]/g)].map(m=>m.index+m[0].length),sents=ends.map(()=>'');let pos=0,si=0,gi=0;
+  const adv=()=>{while(si<ends.length-1&&pos>=ends[si])si++};
+  P.tk.forEach(t=>{adv();if(t.g){sents[si]+=`<button class="gp" data-g="${gi++}" aria-label="Doplň i nebo y">…</button>`;pos++;return}
+    let x=t.s;while(x.length){adv();const take=Math.min(x.length,Math.max(1,(si<ends.length-1?ends[si]:Infinity)-pos));sents[si]+=esc(x.slice(0,take));pos+=take;x=x.slice(take)}});
+  const glue=h=>h.replace(/(\p{L}*)(<button class="gp"[^>]*>…<\/button>)(\p{L}*)/gu,'<span class="wd">$1$2$3</span>');
+  const body=sents.map((h,j)=>`<span class="sn">${glue(h)}<span class="szh">${esc((T.zh||[])[j]||'')}</span></span>`).join('');
+  const opts=hard?['i','í','y','ý']:['i','y'];
+  $('#app').innerHTML=`<div class="stack" id="tv"><div class="qhead"><h2><span class="qtag ${cls(T.L)}">${tagOf(T.L)}</span> ${esc(T.title)}</h2><span class="score" id="tf">0 / ${P.gaps.length}</span><span class="note">${hard?'Těžká · i í y ý':'Lehká · i / y'}</span><button class="btn ghost sm" id="back">← Texty</button></div>
+    <div class="sheet ttext ${cls(T.L)}" id="tt">${body}<div class="chooser" id="cho" hidden>${opts.map(c=>`<button data-v="${c}">${c}</button>`).join('')}<button data-v="" class="clr" aria-label="Smazat">⌫</button></div></div>
     <div class="row"><button class="btn" id="chk">Zkontrolovat · 检查</button><span class="note" id="tmsg"></span></div><div id="tres"></div></div>`;
   $('#back').onclick=viewTexts;
-  $$('#tt .gp').forEach(b=>b.onclick=()=>{if(tx.checked)return;const j=+b.dataset.g,g=tx.gaps[j],cur=tx.vals[j],nx=cur===undefined?'i':cur==='i'?'y':undefined;tx.vals[j]=nx;
-    const long='íý'.includes(g.ans);b.textContent=nx===undefined?'…':long?(nx==='i'?'í':'ý'):nx;b.classList.toggle('set',nx!==undefined);
-    $('#tf').textContent=tx.vals.filter(Boolean).length+' / '+tx.gaps.length;$('#tmsg').textContent=''});
+  const cho=$('#cho'),tt=$('#tt');let cur=-1;
+  const show=(j,v)=>{const b=$(`#tt .gp[data-g="${j}"]`),g=tx.gaps[j];tx.vals[j]=v||undefined;
+    b.textContent=!v?'…':hard?v:('íý'.includes(g.ans)?(v==='i'?'í':'ý'):v);b.classList.toggle('set',!!v);
+    $('#tf').textContent=tx.vals.filter(Boolean).length+' / '+tx.gaps.length;$('#tmsg').textContent=''};
+  const close=()=>{cho.hidden=true;$$('#tt .gp.cur').forEach(x=>x.classList.remove('cur'));cur=-1};
+  const open=(j)=>{const b=$(`#tt .gp[data-g="${j}"]`);close();cur=j;b.classList.add('cur');cho.hidden=false;
+    cho.style.top=(b.offsetTop+b.offsetHeight+6)+'px';cho.style.left=Math.max(4,Math.min(b.offsetLeft-12,tt.clientWidth-cho.offsetWidth-4))+'px'};
+  $$('#tt .gp').forEach(b=>{b.onclick=e=>{e.stopPropagation();if(tx.checked)return;const j=+b.dataset.g;cur===j?close():open(j)};
+    b.onkeydown=e=>{if(tx.checked)return;const k=e.key.toLowerCase(),m=hard?{i:'i','í':'í',y:'y','ý':'ý',1:'i',2:'í',3:'y',4:'ý'}:{i:'i',y:'y','í':'i','ý':'y'};
+      if(m[k]){show(+b.dataset.g,m[k]);close();e.preventDefault()}else if(k==='backspace'||k==='delete'){show(+b.dataset.g,'');e.preventDefault()}else if(k==='escape')close()}});
+  $$('#cho button').forEach(c=>c.onclick=e=>{e.stopPropagation();if(cur<0)return;const j=cur;show(j,c.dataset.v);close();$(`#tt .gp[data-g="${j}"]`).focus()});
+  $('#tv').addEventListener('click',e=>{if(!cho.hidden&&!cho.contains(e.target))close()});
+  tx.close=close;
   $('#chk').onclick=checkText}
 function gapQ(g){return FILL.find(f=>f.id==='f:'+g.word||f.id==='f:'+g.word.toLowerCase())||{id:'f:'+g.word,kind:'fill',L:g.L,t:g.word,k:g.k,ans:g.base,zh:'',e:'',src:null,how:'text'}}
 function checkText(){const left=tx.gaps.filter((g,j)=>!tx.vals[j]).length;if(left){$('#tmsg').textContent=`Ještě ${left} mezer nedoplněno · 还有 ${left} 个空没填`;return}
-  tx.checked=true;let ok=0;const wrong=[];
-  $$('#tt .gp').forEach(b=>{const j=+b.dataset.g,g=tx.gaps[j],good=tx.vals[j]===g.base;b.disabled=true;b.classList.add(good?'ok':'bad');
+  tx.checked=true;tx.close&&tx.close();let ok=0;const wrong=[];const hard=tx.lvl==='hard';
+  $$('#tt .gp').forEach(b=>{const j=+b.dataset.g,g=tx.gaps[j],good=hard?tx.vals[j]===g.ans:tx.vals[j]===g.base;b.disabled=true;b.classList.add(good?'ok':'bad');
     if(good)ok++;else{b.textContent=g.ans;wrong.push(g.word)}recordQ(gapQ(g),good)});
   const n=tx.gaps.length,p=ok/n,[gr,cz,zh]=grade(p),T=tx.T;
   S.tbest=S.tbest||{};S.tbest[T.id]=Math.max(S.tbest[T.id]||0,ok);
-  S.hist.push({d:new Date().toLocaleDateString('cs-CZ'),m:'Doplňovačka: '+T.title,s:ok,n,g:gr});S.hist=S.hist.slice(-30);save();
-  $('#chk').hidden=true;
+  S.hist.push({d:new Date().toLocaleDateString('cs-CZ'),m:'Doplňovačka: '+T.title+(hard?' (těžká)':''),s:ok,n,g:gr});S.hist=S.hist.slice(-30);save();
+  $('#chk').hidden=true;$('#tt').classList.add('showzh');
   $('#tres').innerHTML=`<div class="sheet result"><div class="grade g${gr}">${gr}</div><h2>${cz} <span class="zh">${zh}</span></h2>
     <div class="score" style="font-size:1.3rem">${ok} / ${n} · ${Math.round(p*100)} %</div>
     ${wrong.length?`<div class="note">Červeně je správná odpověď. 红色处显示正确答案，错词已存入错题本。</div><div class="miss">${wrong.map(w=>`<span>${esc(w)}</span>`).join('')}</div>`:'<div class="note">Bez chyby! 全对！🎉</div>'}
     ${shareBox()}
     <div class="row" style="justify-content:center"><button class="btn ghost" id="again">Znovu · 再做一次</button><button class="btn" id="nxt">Další text →</button></div></div>`;
-  bindShare(name=>resultText(name,'Doplňovačka „'+T.title+'“',T.L==='X'?'mix':'řada '+T.L,[`Výsledek: ${ok}/${n} (${Math.round(p*100)} %) – známka ${gr}`],wrong));
+  bindShare(name=>resultText(name,'Doplňovačka „'+T.title+'“'+(hard?' · těžká':''),T.L==='X'?'mix':'řada '+T.L,[`Výsledek: ${ok}/${n} (${Math.round(p*100)} %) – známka ${gr}`],wrong));
   const i=tx.i;$('#again').onclick=()=>openText(i);$('#nxt').onclick=()=>openText((i+1)%TEXTS.length);
   $('#tres').scrollIntoView({behavior:'smooth',block:'start'})}
 
@@ -847,20 +883,22 @@ function hintOf(q){if(q.hint)return q.hint;if(q.id&&(q.id.startsWith('m:')||q.id
 /* ================= hledání chyb ================= */
 let hc=null,hcN=10;
 const FMAP=new Map();FILL.forEach(f=>{const k=f.t.toLowerCase();if(!f.t.includes(' ')&&!FMAP.has(k))FMAP.set(k,f)});
-function sentBank(){const out=[],add=(s,c)=>{if(c.length)out.push({s,cands:c})};
+function sentBank(){const out=[],add=(s,c,zh)=>{if(c.length)out.push({s,cands:c,zh:zh||''})};
   const fromTokens=s=>{const c=[],re=/\p{L}+/gu;let m;while((m=re.exec(s))){const f=FMAP.get(m[0].toLowerCase());if(f)c.push({at:m.index,k:f.k,L:f.L,q:f,word:m[0]})}return c};
-  WORDS.forEach(w=>add(w.ex,fromTokens(w.ex)));
+  WORDS.forEach(w=>add(w.ex,fromTokens(w.ex),w.exzh));
   LETTERS.forEach(L=>G[L].traps.forEach(p=>p.forEach(x=>{const st=x[2],at=st.indexOf(x[5]),c=fromTokens(st).filter(o=>o.at!==at);
-    if(at>=0){const k=gapAt(x[5],'bflmpsvz','yýií');if(k>=0){const chh=x[5][k].toLowerCase();c.push({at,k,L,q:null,word:x[5],base:'yý'.includes(chh)?'y':'i'})}}add(st,c)})));
-  TEXTS.forEach(T=>{const P=parseT(T),re=/[^.!?]+[.!?]/g;let m;while((m=re.exec(P.full))){const lead=m[0].length-m[0].trimStart().length,a=m.index+lead,b=m.index+m[0].length;
-    add(m[0].trim(),P.gaps.filter(g=>g.pos>=a&&g.pos<b).map(g=>({at:g.pos-g.k-a,k:g.k,L:g.L,q:null,word:g.word,base:g.base})))}});
+    if(at>=0){const k=gapAt(x[5],'bflmpsvz','yýií');if(k>=0){const chh=x[5][k].toLowerCase();c.push({at,k,L,q:null,word:x[5],base:'yý'.includes(chh)?'y':'i'})}}add(st,c,x[3])})));
+  TEXTS.forEach(T=>{const P=parseT(T),re=/[^.!?]+[.!?]/g;let m,si=0;while((m=re.exec(P.full))){const zh=(T.zh||[])[si++];const lead=m[0].length-m[0].trimStart().length,a=m.index+lead,b=m.index+m[0].length;
+    add(m[0].trim(),P.gaps.filter(g=>g.pos>=a&&g.pos<b).map(g=>({at:g.pos-g.k-a,k:g.k,L:g.L,q:null,word:g.word,base:g.base})),zh)}});
   const u=new Map();out.forEach(o=>{if(!u.has(o.s))u.set(o.s,o)});return[...u.values()]}
 const VALIDW=(()=>{const v=new Set(FMAP.keys());LETTERS.forEach(L=>G[L].traps.forEach(p=>p.forEach(x=>{v.add(x[0].toLowerCase());v.add(x[5].toLowerCase())})));return v})();
 const flipOk=c=>!VALIDW.has(swapAt(c.word,c.k).toLowerCase());
-function hcQs(n){const bank=sentBank().map(o=>({...o,cands:o.cands.filter(c=>sel.has(c.L)&&'iíyý'.includes(o.s[c.at+c.k])&&flipOk(c))})).filter(o=>o.cands.length);
-  return pick(bank,n).map(o=>{const ne=o.cands.length>=2&&Math.random()<.35?2:1,errs=pick(o.cands,ne).sort((a,b)=>a.at-b.at);let sh=o.s;
+const isJudge=w=>/[bflmpsvz][iíyý]/i.test(w);
+const judgeCount=s=>(s.match(/\p{L}+/gu)||[]).filter(isJudge).length;
+function hcQs(n){const bank=sentBank().map(o=>({...o,cands:o.cands.filter(c=>sel.has(c.L)&&'iíyý'.includes(o.s[c.at+c.k])&&flipOk(c))})).filter(o=>o.cands.length&&judgeCount(o.s)>=2);
+  return pick(bank,n).map(o=>{const maxE=Math.min(2,o.cands.length,judgeCount(o.s)-1),ne=maxE>=2&&Math.random()<.35?2:1,errs=pick(o.cands,ne).sort((a,b)=>a.at-b.at);let sh=o.s;
     errs.forEach(e=>{const i=e.at+e.k;sh=sh.slice(0,i)+(SW[sh[i]]||sh[i])+sh.slice(i+1)});
-    errs.forEach(e=>{e.fq=e.q||gapQ({word:e.word,k:e.k,base:e.base,L:e.L})});return{orig:o.s,shown:sh,errs}})}
+    errs.forEach(e=>{e.fq=e.q||gapQ({word:e.word,k:e.k,base:e.base,L:e.L})});return{orig:o.s,shown:sh,errs,zh:o.zh}})}
 function viewHC(){
   $('#app').innerHTML=`<div class="stack"><h2>Hledání chyb <span class="zh">找错</span></h2><div class="sheet setup">${pickerHTML()}
     <div class="lbl">Počet vět · 句数</div><div class="ltabs" id="fn">${[5,10,15].map(n=>`<button class="ltab all${n===hcN?' on':''}" data-n="${n}">${n}</button>`).join('')}</div>
@@ -872,9 +910,9 @@ function viewHC(){
     $('#quit').onclick=hcFinish;hcDraw()}}
 function hcDraw(){const q=hc.qs[hc.i];hc.picked=new Set();hc.checked=false;
   $('#pg').style.width=(hc.i/hc.qs.length*100)+'%';$('#sc').textContent=`${hc.ok} / ${hc.i}`;
-  const parts=q.shown.split(/(\p{L}+)/u);let pos=0;const html=parts.map(t=>{const at=pos;pos+=t.length;return/\p{L}/u.test(t)?`<button class="hw" data-at="${at}">${esc(t)}</button>`:esc(t)}).join('');
+  const parts=q.shown.split(/(\p{L}+)/u);let pos=0;const html=parts.map(t=>{const at=pos;pos+=t.length;return/\p{L}/u.test(t)&&isJudge(t)?`<button class="hw" data-at="${at}">${esc(t)}</button>`:esc(t)}).join('');
   const n=q.errs.length;
-  $('#qb').innerHTML=`<div class="qprompt">${n===1?'Ve větě je 1 chyba · 有 1 处错误':'Ve větě jsou 2 chyby · 有 2 处错误'}</div><div class="hsent" id="hs">${html}</div>
+  $('#qb').innerHTML=`<div class="qprompt">${n===1?'Ve větě je 1 chyba · 有 1 处错误':'Ve větě jsou 2 chyby · 有 2 处错误'}<br><span class="note">Rozhoduj jen mezi podtrženými slovy. 只需判断带下划线的词。</span></div><div class="hsent" id="hs">${html}</div>
     <div class="row" style="justify-content:center"><button class="btn" id="hck" disabled>Zkontrolovat · 检查</button></div><div class="fb" id="fb"></div><button class="btn" id="nx" hidden>Další · 下一题 →</button>`;
   $$('#hs .hw').forEach(b=>b.onclick=()=>{if(hc.checked)return;const at=+b.dataset.at;hc.picked.has(at)?hc.picked.delete(at):hc.picked.add(at);b.classList.toggle('pick');$('#hck').disabled=!hc.picked.size});
   $('#hck').onclick=hcCheck;$('#nx').onclick=hcNext}
@@ -884,7 +922,9 @@ function hcCheck(){const q=hc.qs[hc.i];hc.checked=true;const errAt=new Set(q.err
     else if(pk){b.classList.add('bad');good=false}});
   q.errs.forEach(e=>{const found=hc.picked.has(e.at);recordQ(e.fq,found);if(!found)hc.wrong.push(q.orig.substr(e.at,e.word.length))});
   if(good)hc.ok++;
-  $('#fb').innerHTML=good?'<span class="y">Správně! 全部找对 ✓</span>':`<span class="n">Ne úplně · 没全对</span><span class="why">Zeleně = našel jsi, oranžově = přehlédl jsi, červeně = to slovo bylo dobře. 绿=找对，橙=漏掉，红=原本没错。</span>`;
+  const mean=q.errs.map(e=>e.fq&&e.fq.zh?`${q.orig.substr(e.at,e.word.length)} = ${e.fq.zh}`:'').filter(Boolean);
+  $('#fb').innerHTML=(good?'<span class="y">Správně! 全部找对 ✓</span>':`<span class="n">Ne úplně · 没全对</span><span class="why">Zeleně = našel jsi, oranžově = přehlédl jsi, červeně = to slovo bylo dobře. 绿=找对，橙=漏掉，红=原本没错。</span>`)
+    +(q.zh||mean.length?`<div class="zhbox">${q.zh?`<div>🀄 ${esc(q.zh)}</div>`:''}${mean.length?`<div class="zhw">${mean.map(esc).join(' · ')}</div>`:''}</div>`:'');
   $('#sc').textContent=`${hc.ok} / ${hc.i+1}`;$('#hck').hidden=true;const nx=$('#nx');nx.hidden=false;nx.focus()}
 function hcNext(){hc.i++;hc.i>=hc.qs.length?hcFinish():hcDraw()}
 function hcFinish(){if(!hc||hc.done)return;hc.done=true;const n=Math.min(hc.qs.length,hc.i+(hc.checked?1:0));if(!n){go('cviceni');return}
@@ -948,7 +988,7 @@ function startMist(){const qs=Object.values(S.mist).map(x=>x.q);if(!qs.length){g
 document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key.toLowerCase();
   if(ch&&!ch.done){if(k==='i'||k==='y'){chAnswer(k);e.preventDefault()}return}
   if(runner&&!runner.done){const q=runner.qs[runner.i];
-    if(!runner.answered){if(q.kind==='fill'&&(k==='i'||k==='y')){answer(k);e.preventDefault()}
+    if(!runner.answered){if(q.kind==='fill'){const hard=runner.lvl==='hard',m=hard?{i:'i','í':'í',y:'y','ý':'ý',1:'i',2:'í',3:'y',4:'ý'}:{i:'i',y:'y','í':'i','ý':'y'};if(m[k]){answer(m[k]);e.preventDefault()}}
       else if(q.kind==='choice'&&/^[1-4]$/.test(k)){const o=runner.order[+k-1];if(o!=null){answer(o);e.preventDefault()}}}
     else if(k==='enter'||k===' '){next();e.preventDefault()}
   }else if(flash){if(k===' '){flash.flip=!flash.flip;drawCard();e.preventDefault()}else if(k==='arrowright')moveCard(1);else if(k==='arrowleft')moveCard(-1)}
